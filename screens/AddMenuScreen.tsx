@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';  // Assuming you have this types file in your project
-
-const courses = ['Starters', 'Mains', 'Desserts'];
+import { RootStackParamList } from '../types';
 
 type AddMenuScreenProps = NativeStackScreenProps<RootStackParamList, 'AddMenu'>;
 
-export default function AddMenuScreen({ navigation }: AddMenuScreenProps) {
+export default function AddMenuScreen({ navigation, route }: AddMenuScreenProps) {
+  const { menuItems } = route.params;
   const [dishName, setDishName] = useState('');
   const [description, setDescription] = useState('');
-  const [course, setCourse] = useState(courses[0]);
+  const [course, setCourse] = useState('Starters');
   const [price, setPrice] = useState('');
+  const [addedItems, setAddedItems] = useState(menuItems);  // Holds the list of added menu items
 
   const handleSubmit = () => {
     const parsedPrice = parseFloat(price);
@@ -22,8 +21,20 @@ export default function AddMenuScreen({ navigation }: AddMenuScreenProps) {
     }
 
     const newItem = { dishName, description, course, price: parsedPrice };
+    const updatedMenuItems = [...addedItems, newItem];
+    setAddedItems(updatedMenuItems);  // Update the state with the new item
+    setDishName('');
+    setDescription('');
+    setPrice('');  // Clear input fields after submission
+  };
 
-    navigation.navigate('Home', { newItem });
+  const handleRemoveItem = (index: number) => {
+    const updatedMenuItems = addedItems.filter((_, i) => i !== index);
+    setAddedItems(updatedMenuItems);  // Remove the item from the list
+  };
+
+  const handleSaveMenu = () => {
+    navigation.navigate('Home', { menuItems: addedItems });  // Pass the updated list back to the Home screen
   };
 
   return (
@@ -34,7 +45,6 @@ export default function AddMenuScreen({ navigation }: AddMenuScreenProps) {
         onChangeText={setDishName}
         value={dishName}
         placeholder="Enter dish name"
-        placeholderTextColor="#999"
       />
 
       <Text style={styles.label}>Description:</Text>
@@ -43,21 +53,29 @@ export default function AddMenuScreen({ navigation }: AddMenuScreenProps) {
         onChangeText={setDescription}
         value={description}
         placeholder="Enter description"
-        placeholderTextColor="#999"
         multiline
       />
 
       <Text style={styles.label}>Course:</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={course}
-          onValueChange={setCourse}
-          style={styles.picker}
+      <View style={styles.courseContainer}>
+        <TouchableOpacity
+          style={[styles.courseButton, course === 'Starters' && styles.selectedButton]}
+          onPress={() => setCourse('Starters')}
         >
-          {courses.map((course) => (
-            <Picker.Item key={course} label={course} value={course} />
-          ))}
-        </Picker>
+          <Text style={styles.courseButtonText}>Starters</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.courseButton, course === 'Mains' && styles.selectedButton]}
+          onPress={() => setCourse('Mains')}
+        >
+          <Text style={styles.courseButtonText}>Mains</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.courseButton, course === 'Desserts' && styles.selectedButton]}
+          onPress={() => setCourse('Desserts')}
+        >
+          <Text style={styles.courseButtonText}>Desserts</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.label}>Price:</Text>
@@ -66,13 +84,40 @@ export default function AddMenuScreen({ navigation }: AddMenuScreenProps) {
         onChangeText={setPrice}
         value={price}
         placeholder="Enter price"
-        placeholderTextColor="#999"
         keyboardType="numeric"
       />
 
       <View style={styles.buttonContainer}>
-        <Button title="Add Dish" onPress={handleSubmit} color="#2196F3" />
+        <Button title="Add Dish" onPress={handleSubmit} />
       </View>
+
+      {/* Display the list of added items with the option to remove */}
+      <Text style={styles.label}>Added Dishes:</Text>
+      <FlatList
+        data={addedItems}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item, index }) => (
+          <View style={styles.menuItem}>
+            <Text style={styles.dishName}>{item.dishName} - {item.course}</Text>
+            <Text>{item.description}</Text>
+            <Text>${item.price.toFixed(2)}</Text>
+
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => handleRemoveItem(index)}
+            >
+              <Text style={styles.removeButtonText}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={handleSaveMenu}
+      >
+        <Text style={styles.saveButtonText}>Save Menu</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -98,18 +143,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
   },
-  pickerContainer: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
+  courseContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
-  picker: {
-    height: 50,
-    width: '100%',
+  courseButton: {
+    backgroundColor: '#6C63FF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  courseButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  selectedButton: {
+    backgroundColor: '#4C40FF',
   },
   buttonContainer: {
     marginTop: 20,
   },
+  menuItem: {
+    backgroundColor: '#fff',
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  dishName: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  removeButton: {
+    marginTop: 10,
+    backgroundColor: '#FF6B6B',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  saveButton: {
+    marginTop: 20,
+    backgroundColor: '#6C63FF',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+  },
 });
+

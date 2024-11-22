@@ -9,15 +9,13 @@ export default function HomeScreen({ navigation, route }: HomeScreenProps) {
   const [menuItems, setMenuItems] = useState<
     { dishName: string; description: string; course: string; price: number }[]
   >([]);
+  const [filteredItems, setFilteredItems] = useState<{ dishName: string; description: string; course: string; price: number }[]>([]);
 
   useEffect(() => {
-    if (route.params?.newItem) {
-      setMenuItems((prevItems) => [
-        ...prevItems,
-        route.params.newItem as { dishName: string; description: string; course: string; price: number },
-      ]);
+    if (route.params?.menuItems) {
+      setMenuItems(route.params.menuItems)
     }
-  }, [route.params?.newItem]);
+  }, [route.params?.menuItems]);
 
   // Function to calculate average price by course
   const calculateAveragePrices = () => {
@@ -42,15 +40,22 @@ export default function HomeScreen({ navigation, route }: HomeScreenProps) {
 
   const averagePrices = calculateAveragePrices();
 
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Chef's Menu</Text>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('AddMenu')}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('AddMenu', { menuItems,})}
+      >
         <Text style={styles.buttonText}>Add Menu</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FilterMenu')}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('FilterMenu', { menuItems })}
+      >
         <Text style={styles.buttonText}>Filter Menu</Text>
       </TouchableOpacity>
 
